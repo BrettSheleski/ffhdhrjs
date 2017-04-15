@@ -1,0 +1,14 @@
+{
+    "name": "ffhdhrjs",
+    "description": "A Proxy web server to transcode an HDHomeRun using ffmpeg",
+    "version": "0.1.0",
+     "author": {
+          "name": "Brett Sheleski",
+           "email": "brett@sheleski.com"
+     },
+      "dependencies": {
+           "express" : "4.15.2",
+           "http" : "0.0.0",
+           "child_process": "1.0.2"
+      }
+}

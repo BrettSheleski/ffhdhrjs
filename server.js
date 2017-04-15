@@ -4,10 +4,17 @@ var hdHomeRun = {
   'hostname' : '192.168.0.131'
 };
 
-var http = require('http');
-var express = require('express'),
-    Transcoder = require('stream-transcoder');
-var child_process = require("child_process")
+var transcodeFormats = {
+    'webm' : {
+        "-c:v": "libvpx",
+        "-c:a" : "libvorbis",
+        "-f" : "webm"
+    }
+}
+
+var http = require('http'),
+    express = require('express'),
+    child_process = require("child_process")
 
 var app = express();
 
@@ -20,49 +27,86 @@ app.get("/lineup.*", function(request, response, next){
     };
 
     var hdhrreq = http.request(options, function(hdhrres) {
-
         response.writeHead(hdhrres.statusCode, hdhrres.statusMessage, hdhrres.headers);
         hdhrres.pipe(response);
-    })
-    .on('data', function (chunk){
-        console.log(chunk);
     })
     .end();
 });
 
-app.get('/auto/*', function(request, response, next) {
-	
+app.get('/ch/:channel/:source?', function(request, response, next) {
+
+   console.log("tuning to channel " + request.params.channel);
+
     var options = {
-        method: 'HEAD',
+        method: 'GET',
         hostname: hdHomeRun.hostname, 
         port: hdHomeRun.port, 
-        path: request.path
+        path: "/auto/v" + request.params.channel + "?transcode=" + (request.params.source || "heavy")
     };
 
-    options.path += "?transcode=internet240";
+    var ffmpegCommand = null;
 
     var hdhrreq = http.request(options, function(hdhrres) {
         if (hdhrres.statusCode != 200){
+            console.log("Unable to tune to channel " + request.params.channel);
             response.writeHead(hdhrres.statusCode, hdhrres.statusMessage, hdhrres.headers)
             response.end();
-            next();
             return;
         }
 
-        options.method = 'GET';
+        var width = request.query.width;
+        var height = request.query.height;
 
-        var streamRequest = http.request(options, function(streamResponse){
+        console.log("piping channel " + request.params.channel + " to ffmpeg");
 
-            var ffmpegOptions = "-re -i - -f webm -c:v libvpx -c:a libvorbis -f webm pipe:1".split(' ');
-            var ffmpegCommand = child_process.spawn("ffmpeg", ffmpegOptions);
-            ffmpegCommand.stdout.pipe(response);
+        hdhrres.headers["content-type"] = "video/webm";
 
-            streamResponse.pipe(ffmpegCommand.stdin);
+        response.writeHead(hdhrres.statusCode, hdhrres.statusMessage, hdhrres.headers)
 
-        })
-        .end();
-       
-       //next();
+        var ffmpegOptions = "-re -i -";
+        var ffmpegTranscodeOptions = transcodeFormats['webm'];
+
+        if ("format" in request.query && request.query["format"] in transcodeFormats){
+            ffmpegTranscodeOptions = transcodeFormats[request.query["format"]];
+        }
+
+        for(var key in ffmpegTranscodeOptions){
+            ffmpegOptions += " " + key;
+            ffmpegOptions += " " + ffmpegTranscodeOptions[key];
+        }
+
+        if (width){
+            if (!height){
+                height = -1;
+            }
+
+            ffmpegOptions += " -vf scale=" + width.toString() + ":" + height.toString();
+        } 
+        else if (height){
+            ffmpegOptions += " -vf scale=-1:" + height.toString();
+        }
+
+        ffmpegOptions += " pipe:1";
+
+        //console.log("ffmpeg options:", ffmpegOptions);
+
+        ffmpegCommand = child_process.spawn("ffmpeg", ffmpegOptions.split(' '));
+        ffmpegCommand.on('error', function(e){
+            console.log(e);
+            
+            response.end();
+        });
+
+        ffmpegCommand.stdout.pipe(response);
+        
+        hdhrres.pipe(ffmpegCommand.stdin);
+    })
+    .on('end', function(){
+        console.log('request ended')
+
+        if (ffmpegCommand != null){
+            ffmpegCommand.kill();
+        }
     })
     .on('error', function(e){
         console.log(e);
@@ -70,8 +114,8 @@ app.get('/auto/*', function(request, response, next) {
     })
     .end();
 
-    
 })
+.use(express.static('public'))
 .listen(serverPort, function(){
 	console.log("listening on port " + serverPort.toString());
 	console.log("\thttp://192.168.0.2:" + serverPort.toString() + "/");

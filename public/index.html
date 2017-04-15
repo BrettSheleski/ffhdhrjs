@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Titania TV</title>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js"></script>
+<script type="text/javascript">
+	$(function(){
+
+		$.ajax({
+			dataType: "json",
+			url: "lineup.json",
+			success: function(channels){
+
+
+					var vm = {
+						channels : channels,
+						currentChannel : ko.observable(null)
+					};
+
+					vm.setChannel = function(ch){
+						vm.currentChannel(ch);
+					};
+
+					vm.stopVideo = function(){
+						vm.currentChannel(null);
+					};
+
+					vm.videoUrl = ko.computed(function(){
+						var ch = vm.currentChannel();
+
+						if (ch){
+							return "/ch/" + ch.GuideNumber + "/internet240";
+						}
+
+						return null;
+					});
+
+					ko.applyBindings(vm);
+			}
+	});
+
+	})
+</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="bootstrap.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+</head>
+<body>
+<div class="container">
+
+<div class="row">
+	<div class="col-xs-3">
+		<div data-bind="foreach: channels" class="list-group">
+			<a class="list-group-item" href="#" data-bind="click: $parent.setChannel, css : {'active' : $parent.currentChannel() == $data}">
+				<span class="badge" data-bind="text: GuideNumber"></span>
+				<span data-bind="text: GuideName"></span>
+			</a>
+		</div>
+	</div>
+	<div class="col-xs-9">
+
+
+
+
+<div class="panel panel-default fade" data-bind="css : {'in' : currentChannel }">
+	<div class="panel-heading" data-bind="with: currentChannel">
+		<span class="pull-right badge" data-bind="click:$parent.stopVideo">
+			<span data-bind="text: GuideNumber"></span>
+			<span aria-hidden="true">&times;</span>
+		</span>
+		<h3 class="panel-title" data-bind="text: GuideName"></h3>
+	</div>
+<div class="embed-responsive embed-responsive-16by9">
+	<video class="embed-responsive-item" data-bind="attr: {src: videoUrl}" controls="controls" autoplay="autoplay">
+	</video>
+</div>
+</div>
+    
+	
+	</div>
+</div>
+
+</div>
+</div>
+</body>
+</html>
