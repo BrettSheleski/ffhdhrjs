@@ -1,3 +1,7 @@
+#Visual Studio Crap
+.vs
+*.njsproj.user
+
 # Logs
 logs
 *.log

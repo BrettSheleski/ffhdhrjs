@@ -1,0 +1,5 @@
+{
+  "port": 5004,
+  "hostname": "192.168.0.131",
+  "defaultProfile": "mobile"
+}

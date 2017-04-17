@@ -1,0 +1,11 @@
+{
+  "webm": {
+    "ffmpegOptions": {
+      "-c:v": "libvpx",
+      "-c:a": "libvorbis",
+      "-f": "webm",
+      "-crf": "10"
+    },
+    "contentType": "video/webm"
+  }
+}
