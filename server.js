@@ -14,7 +14,8 @@ var transcodeFormats = {
 
 var http = require('http'),
     express = require('express'),
-    child_process = require("child_process")
+    child_process = require("child_process"),
+    os = require('os');
 
 var app = express();
 
