@@ -6,9 +6,13 @@ var hdHomeRun = {
 
 var transcodeFormats = {
     'webm' : {
-        "-c:v": "libvpx",
-        "-c:a" : "libvorbis",
-        "-f" : "webm"
+        ffmpegOptions : {
+            "-c:v": "libvpx",
+            "-c:a" : "libvorbis",
+            "-f" : "webm",
+            "-crf" : "10"
+        },
+        contentType : "video/webm"
     }
 }
 
@@ -38,6 +42,10 @@ app.get('/ch/:channel/:source?', function(request, response, next) {
 
    console.log("tuning to channel " + request.params.channel);
 
+   request.on('end', function(){
+        console.log('END REQUEST');
+   });
+
     var options = {
         method: 'GET',
         hostname: hdHomeRun.hostname, 
@@ -57,23 +65,27 @@ app.get('/ch/:channel/:source?', function(request, response, next) {
 
         var width = request.query.width;
         var height = request.query.height;
+        var bitrate = request.query.bitrate;
 
         console.log("piping channel " + request.params.channel + " to ffmpeg");
 
-        hdhrres.headers["content-type"] = "video/webm";
+        
 
         response.writeHead(hdhrres.statusCode, hdhrres.statusMessage, hdhrres.headers)
 
         var ffmpegOptions = "-re -i -";
         var ffmpegTranscodeOptions = transcodeFormats['webm'];
+        
 
         if ("format" in request.query && request.query["format"] in transcodeFormats){
             ffmpegTranscodeOptions = transcodeFormats[request.query["format"]];
         }
 
-        for(var key in ffmpegTranscodeOptions){
+        hdhrres.headers["content-type"] = ffmpegTranscodeOptions.contentType;
+
+        for(var key in ffmpegTranscodeOptions.ffmpegOptions){
             ffmpegOptions += " " + key;
-            ffmpegOptions += " " + ffmpegTranscodeOptions[key];
+            ffmpegOptions += " " + ffmpegTranscodeOptions.ffmpegOptions[key];
         }
 
         if (width){
@@ -87,9 +99,13 @@ app.get('/ch/:channel/:source?', function(request, response, next) {
             ffmpegOptions += " -vf scale=-1:" + height.toString();
         }
 
+        if (bitrate){
+            ffmpegOptions += " -b:v 1M";
+        }
+
         ffmpegOptions += " pipe:1";
 
-        //console.log("ffmpeg options:", ffmpegOptions);
+        console.log("ffmpeg options:", ffmpegOptions);
 
         ffmpegCommand = child_process.spawn("ffmpeg", ffmpegOptions.split(' '));
         ffmpegCommand.on('error', function(e){
@@ -119,5 +135,6 @@ app.get('/ch/:channel/:source?', function(request, response, next) {
 .use(express.static('public'))
 .listen(serverPort, function(){
 	console.log("listening on port " + serverPort.toString());
+    
 	console.log("\thttp://192.168.0.2:" + serverPort.toString() + "/");
 });

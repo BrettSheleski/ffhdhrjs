@@ -19,7 +19,8 @@
 
 					var vm = {
 						channels : channels,
-						currentChannel : ko.observable(null)
+						currentChannel : ko.observable(null),
+						sources : ko.observableArray()
 					};
 
 					vm.setChannel = function(ch){
@@ -30,14 +31,17 @@
 						vm.currentChannel(null);
 					};
 
-					vm.videoUrl = ko.computed(function(){
+					vm.currentChannel.subscribe(function(){
+						vm.sources.removeAll();
+
 						var ch = vm.currentChannel();
 
 						if (ch){
-							return "/ch/" + ch.GuideNumber + "/mobile";
+							vm.sources.push({
+								src :  "/ch/" + ch.GuideNumber + "/mobile?width=400&bitrate=1M",
+								type : "video/webm"
+							})
 						}
-
-						return null;
 					});
 
 					ko.applyBindings(vm);
@@ -67,9 +71,6 @@
 	</div>
 	<div class="col-xs-9">
 
-
-
-
 <div class="panel panel-default fade" data-bind="css : {'in' : currentChannel }">
 	<div class="panel-heading" data-bind="with: currentChannel">
 		<span class="pull-right badge" data-bind="click:$parent.stopVideo">
@@ -78,9 +79,12 @@
 		</span>
 		<h3 class="panel-title" data-bind="text: GuideName"></h3>
 	</div>
-<div class="embed-responsive embed-responsive-16by9">
-	<video class="embed-responsive-item" data-bind="attr: {src: videoUrl}" controls="controls" autoplay="autoplay">
+<div class="embed-responsive embed-responsive-16by9" data-bind="foreach: sources">
+	
+	<video class="embed-responsive-item" controls="controls" autoplay="autoplay" >
+		<source data-bind="attr: {src: src, type: type}"/>
 	</video>
+	
 </div>
 </div>
     
