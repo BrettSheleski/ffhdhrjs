@@ -1,60 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<title>Titania TV</title>
+<html lang="en" ng-app="ffhdhr" ng-controller="main">
+<head ng-app="ffhdhr">
+<title ng-bind="appName">Titania TV</title>
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 <meta content="utf-8" http-equiv="encoding">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="bower_components/angular/angular.min.js"></script>
+<script src="js/app.js"></script>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js"></script>
-<script type="text/javascript">
-	$(function(){
-
-		$.ajax({
-			dataType: "json",
-			url: "lineup.json",
-			success: function(channels){
-
-
-					var vm = {
-						channels : channels,
-						currentChannel : ko.observable(null),
-						sources : ko.observableArray()
-					};
-
-					vm.setChannel = function(ch){
-						vm.currentChannel(ch);
-					};
-
-					vm.stopVideo = function(){
-						vm.currentChannel(null);
-					};
-
-					vm.currentChannel.subscribe(function(){
-						vm.sources.removeAll();
-
-						var ch = vm.currentChannel();
-
-						if (ch){
-							vm.sources.push({
-								src :  "/ch/" + ch.GuideNumber + "/mobile?width=400&bitrate=1M",
-								type : "video/webm"
-							})
-						}
-					});
-
-					ko.applyBindings(vm);
-			}
-	});
-
-	})
-</script>
 <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.css">
+<!-- <link rel="stylesheet" href="bootstrap.min.css"> -->
 
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
 <!-- Latest compiled and minified JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 
 </head>
 <body>
@@ -69,7 +30,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#">Titania TV</a>
+                <a class="navbar-brand" href="#">{{appName}}</a>
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
@@ -98,28 +59,39 @@
         </div><!--/.container-fluid -->
     </nav>
 <div class="row">
-	<div class="col-xs-3">
-		<div data-bind="foreach: channels" class="list-group">
-			<a class="list-group-item" href="#" data-bind="click: $parent.setChannel, css : {'active' : $parent.currentChannel() == $data}">
-				<span class="badge" data-bind="text: GuideNumber"></span>
-				<span data-bind="text: GuideName"></span>
-			</a>
-		</div>
-	</div>
-	<div class="col-xs-9">
+	<div class="col-xs-3" ng-class="{'col-xs-3' : isChannelsExpanded, 'col-xs-1' : !isChannelsExpanded, 'text-center' : !isChannelsExpanded}">
 
-<div class="panel panel-default fade" data-bind="css : {'in' : currentChannel }">
-	<div class="panel-heading" data-bind="with: currentChannel">
-		<span class="pull-right badge" data-bind="click:$parent.stopVideo">
-			<span data-bind="text: GuideNumber"></span>
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<span class="panel-title">
+					<span class="glyphicon glyphicon-menu-hamburger" ng-click="toggleChannels()"></span>
+					<span ng-show="isChannelsExpanded">Channels</span>
+				</span>
+			</div>
+			<div class="list-group">
+				<a class="list-group-item" href="#" ng-repeat="channel in channels" ng-click="selectChannel(channel)" ng-class="{active : channel == currentChannel}">
+					<span ng-show="isChannelsExpanded" class="badge" title="{{channel.GuideName}}">{{channel.GuideNumber}}</span>
+					<span title="{{channel.GuideName}}">{{ isChannelsExpanded ? channel.GuideName : channel.GuideNumber}}</span>
+				</a>
+			</div>
+
+		</div>
+
+
+	</div>
+	<div class="col-xs-9" ng-class="{'col-xs-9' : isChannelsExpanded, 'col-xs-11' : !isChannelsExpanded}">
+
+<div class="panel panel-default fade" ng-class="{in : currentChannel != null}" ng-cloak>
+	<div class="panel-heading" ng-if="currentChannel != null">
+		<span class="pull-right badge">
+			<span>{{currentChannel.GuideNumber}}</span>
 			<span aria-hidden="true">&times;</span>
 		</span>
-		<h3 class="panel-title" data-bind="text: GuideName"></h3>
+		<h3 class="panel-title">{{currentChannel.GuideName}}</h3>
 	</div>
-<div class="embed-responsive embed-responsive-16by9" data-bind="foreach: sources">
-	
-	<video class="embed-responsive-item" controls="controls" autoplay="autoplay" >
-		<source data-bind="attr: {src: src, type: type}"/>
+<div class="embed-responsive embed-responsive-16by9">
+	<video ng-if="currentChannel != null" class="embed-responsive-item"  autoplay="autoplay"  ng-src="{{ '/ch/' + currentChannel.GuideNumber + '/mobile?width=400'}}"  >
+<!--		<source ng-src="{{ '/ch/' + currentChannel.GuideNumber + '/mobile?width=400'}}" /> -->
 	</video>
 	
 </div>
